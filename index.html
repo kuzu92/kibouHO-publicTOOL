@@ -144,7 +144,9 @@ Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}
             const resultBox = document.getElementById('result-box');
             const tableBody = document.getElementById('result-table-body');
             
+            // ✨ 【修正】古い表示を100%確実に消し去るリセット処理
             errorBox.classList.add('hidden');
+            errorBox.innerText = ''; // 中身の文字も完全に消去
             resultBox.classList.add('hidden');
             tableBody.innerHTML = '';
 
@@ -152,11 +154,13 @@ Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}
             const roles = parseRolesYAML(document.getElementById('roles').value);
             const preferences = parsePreferencesYAML(document.getElementById('preferences').value);
 
+            // バリデーションチェック
             if (Object.keys(roles).length === 0 || Object.keys(preferences).length === 0) {
                 errorBox.innerText = "❌ エラー: データの読み込みに失敗しました。\n入力フォームのフォーマット（コロンや改行、波カッコ）を確認してください。";
                 errorBox.classList.remove('hidden');
                 return;
             }
+
 
             const members = Object.keys(preferences);
             let flatRoles = [];
