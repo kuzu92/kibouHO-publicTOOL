@@ -1,0 +1,62 @@
+name: Execute Role Assignment via Issue Form
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  assign:
+    permissions:
+      issues: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # ✨ 【復活】サーバー起動後、Issueのコメント欄に「処理開始」を即座に自動投稿します
+    - name: Comment Start Message
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ github.event.issue.number }}
+        body: "⏳ システムがIssueを検知しました。ただいま自動割り当ての計算を開始しています。完了まであと数秒ほどこのままお待ちください..."
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyyaml
+
+    - name: Save raw issue body
+      env:
+        RAW_BODY: ${{ github.event.issue.body }}
+      run: |
+        echo "$RAW_BODY" > raw_issue.txt
+
+    - name: Run assignment script
+      id: run_script
+      continue-on-error: true
+      run: |
+        python assign.py --issue_file raw_issue.txt > result.txt
+
+    - name: Create Comment with Results
+      if: always()
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ github.event.issue.number }}
+        body-file: result.txt
+
+    - name: Close Issue
+      if: always()
+      run: |
+        if [ "${{ steps.run_script.outcome }}" = "success" ]; then
+          gh issue close ${{ github.event.issue.number }} --comment "割り当て処理が正常に完了しました。"
+        else
+          gh issue close ${{ github.event.issue.number }} --comment "⚠️ 入力エラーを検知したため処理を中断しました。上記のエラー内容を確認し、新しいIssueからやり直してください。"
+        fi
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
