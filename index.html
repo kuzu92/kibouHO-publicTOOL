@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎭 役職自動割り当てツール (GitHub Pages版)</title>
+    <!-- 見た目を綺麗にするためのスタイルシート -->
+    <link href="https://cloudflare.com" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen py-8 px-4">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">🎭 役職自動割り当てツール</h1>
+
+        <!-- 1. モード選択 -->
+        <div class="mb-6">
+            <label class="block text-gray-700 font-bold mb-2">1. 割り当てモードを選択してください</label>
+            <select id="mode" class="w-full p-2 border rounded bg-white">
+                <option value="fairness_first">ワースト回避モード（全員の不満度を最小化・要人数一致）</option>
+                <option value="satisfaction_first">第1希望最優先モード（上位希望の当選数を最大化）</option>
+            </select>
+        </div>
+
+        <!-- 2. 定員入力 -->
+        <div class="mb-6">
+            <label class="block text-gray-700 font-bold mb-2">2. 各役職の定員 (役職名: 定員)</label>
+            <textarea id="roles" class="w-full p-3 border rounded font-mono text-sm h-28" rows="4">HO1: 1
+HO2: 1
+HO3: 1
+HO4: 1</textarea>
+        </div>
+
+        <!-- 3. 希望順位入力 -->
+        <div class="mb-6">
+            <label class="block text-gray-700 font-bold mb-2">3. メンバーの希望順位 (名前: {役職: 順位, ...})</label>
+            <textarea id="preferences" class="w-full p-3 border rounded font-mono text-sm h-48" rows="6">Member1: {HO1: 2, HO2: 2, HO3: 1, HO4: 1}
+Member2: {HO1: 1, HO2: 3, HO3: 3, HO4: 2}
+Member3: {HO1: 2, HO2: 1, HO3: 3, HO4: 1}
+Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
+        </div>
+
+        <!-- 実行ボタン -->
+        <div class="text-center mb-8">
+            <button onclick="executeAssignment()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full shadow text-lg transition duration-200">
+                🚀 自動割り当てを実行する
+            </button>
+        </div>
+
+        <!-- 結果・エラー表示エリア -->
+        <div id="error-box" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded whitespace-pre-line"></div>
+        
+        <div id="result-box" class="hidden">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">📊 割り当て結果</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto border-collapse border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="border border-gray-300 px-4 py-2 text-left">名前</th>
+                            <th class="border border-gray-300 px-4 py-2 text-left">割り当て役職</th>
+                        </tr>
+                    </thead>
+                    <tbody id="result-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- アルゴリズム処理を行うJavaScript部分 -->
+    <script>
+        function parseRolesYAML(text) {
+            const obj = {};
+            const lines = text.split('\n');
+            for (let line of lines) {
+                line = line.trim();
+                if (!line || line.startsWith('#')) continue;
+                const parts = line.split(':');
+                if (parts.length >= 2) {
+                    const key = parts[0].trim();
+                    const val = parseInt(parts[1].trim(), 10);
+                    if (key && !isNaN(val)) obj[key] = val;
+                }
+            }
+            return obj;
+        }
+
+        function parsePreferencesYAML(text) {
+            const obj = {};
+            const lines = text.split('\n');
+            for (let line of lines) {
+                line = line.trim();
+                if (!line || line.startsWith('#')) continue;
+                
+                const colonIdx = line.indexOf(':');
+                if (colonIdx === -1) continue;
+                
+                const name = line.substring(0, colonIdx).trim();
+                let braceContent = line.substring(colonIdx + 1).trim();
+                
+                braceContent = braceContent.replace(/[\{\}]/g, '');
+                
+                obj[name] = {};
+                const pairs = braceContent.split(',');
+                for (let pair of pairs) {
+                    const pParts = pair.split(':');
+                    if (pParts.length >= 2) {
+                        const role = pParts[0].trim();
+                        const rank = parseInt(pParts[1].trim(), 10);
+                        if (role && !isNaN(rank)) obj[name][role] = rank;
+                    }
+                }
+            }
+            return obj;
+        }
+
+        function permute(arr) {
+            const result = [];
+            const permuteInner = (arr, m = []) => {
+                if (arr.length === 0) {
+                    result.push(m);
+                } else {
+                    const seen = new Set();
+                    for (let i = 0; i < arr.length; i++) {
+                        if (seen.has(arr[i])) continue;
+                        seen.add(arr[i]);
+                        let curr = arr.slice();
+                        let next = curr.splice(i, 1);
+                        permuteInner(curr.slice(), m.concat(next));
+                    }
+                }
+            }
+            permuteInner(arr);
+            return result;
+        }
+
+        function executeAssignment() {
+            const errorBox = document.getElementById('error-box');
+            const resultBox = document.getElementById('result-box');
+            const tableBody = document.getElementById('result-table-body');
+            
+            errorBox.classList.add('hidden');
+            resultBox.classList.add('hidden');
+            tableBody.innerHTML = '';
+
+            const mode = document.getElementById('mode').value;
+            const roles = parseRolesYAML(document.getElementById('roles').value);
+            const preferences = parsePreferencesYAML(document.getElementById('preferences').value);
+
+            if (Object.keys(roles).length === 0 || Object.keys(preferences).length === 0) {
+                errorBox.innerText = "❌ エラー: データの読み込みに失敗しました。\n入力フォームのフォーマット（コロンや改行、波カッコ）を確認してください。";
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            const members = Object.keys(preferences);
+            let flatRoles = [];
+            let totalSlots = 0;
+            for (let [role, count] of Object.entries(roles)) {
+                totalSlots += count;
+                for (let i = 0; i < count; i++) flatRoles.push(role);
+            }
+
+            if (mode === "fairness_first" && members.length !== totalSlots) {
+                errorBox.innerText = `❌ エラー: 総定員数とメンバーの人数が一致していません\n現在、総定員数は ${totalSlots}人、メンバー数は ${members.length}人 です。\n\nワースト回避モードを動かすには、人数と定員を完全に一致させてください。一致しない場合は「第1希望最優先モード」に切り替えてください。`;
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            let results = {};
+
+            if (mode === "fairness_first") {
+                const patterns = permute(flatRoles);
+                let bestPatterns = [];
+                let minMaxPenalty = Infinity;
+                let minTotalPenalty = Infinity;
+
+                for (let p of patterns) {
+                    let currentMaxPenalty = 0;
+                    let currentTotalPenalty = 0;
+                    let currentPattern = {};
+
+                    for (let i = 0; i < members.length; i++) {
+                        const member = members[i];
+                        const role = p[i];
+                        const rank = preferences[member][role] !== undefined ? preferences[member][role] : 99;
+                        currentPattern[member] = { role, rank, isOut: rank === 99 };
+
+                        const penalty = rank === 99 ? 10000 : Math.pow(rank, 4);
+                        currentTotalPenalty += penalty;
+                        if (penalty > currentMaxPenalty) currentMaxPenalty = penalty;
+                    }
+
+                    if (currentMaxPenalty < minMaxPenalty) {
+                        minMaxPenalty = currentMaxPenalty;
+                        minTotalPenalty = currentTotalPenalty;
+                        bestPatterns = [currentPattern];
+                    } else if (currentMaxPenalty === minMaxPenalty) {
+                        if (currentTotalPenalty < minTotalPenalty) {
+                            minTotalPenalty = currentTotalPenalty;
+                            bestPatterns = [currentPattern];
+                        } else if (currentTotalPenalty === minTotalPenalty) {
+                            bestPatterns.push(currentPattern);
+                        }
+                    }
+                }
+                results = bestPatterns[Math.floor(Math.random() * bestPatterns.length)];
+            } else {
+                let remainingRoles = { ...roles };
+                let assignments = {};
+                members.forEach(m => assignments[m] = null);
+
+                let maxRank = 1;
+                members.forEach(m => {
+                    Object.values(preferences[m]).forEach(r => { if(r > maxRank) maxRank = r; });
+                });
+
+                for (let rank = 1; rank <= maxRank; rank++) {
+                    let roleDemands = {};
+                    Object.keys(roles).forEach(r => roleDemands[r] = []);
+
+                    members.forEach(member => {
+                        if (assignments[member] !== null) return;
+                        Object.entries(preferences[member]).forEach(([role, r]) => {
+                            if (r === rank && roleDemands[role] !== undefined) roleDemands[role].push(member);
+                        });
+                    });
+                    let activeRoles = Object.keys(roles).filter(r => remainingRoles[r] > 0 && roleDemands[r].length > 0);
+                    activeRoles.sort((a, b) => (roleDemands[b].length / remainingRoles[b]) - (roleDemands[a].length / remainingRoles[a]));
+
+                    activeRoles.forEach(role => {
+                        let validCandidates = roleDemands[role].filter(c => assignments[c] === null);
+                        validCandidates.sort(() => Math.random() - 0.5);
+                        let available = remainingRoles[role];
+                        let chosen = validCandidates.slice(0, available);
+
+                        chosen.forEach(member => {
+                            assignments[member] = { role, rank, isOut: false };
+                            remainingRoles[role]--;
+                        });
+                    });
+                }
+
+                let unassigned = members.filter(m => assignments[m] === null);
+                let unfilled = Object.keys(remainingRoles).filter(r => remainingRoles[r] > 0);
+                unassigned.forEach(member => {
+                    if (unfilled.length > 0) {
+                        let spareRole = unfilled[0];
+                        assignments[member] = { role: spareRole, rank: null, isOut: true };
+                        remainingRoles[spareRole]--;
+                        if (remainingRoles[spareRole] === 0) unfilled.shift();
+                    }
+                });
+
+                results = assignments;
+            }
+
+            for (let [name, res] of Object.entries(results)) {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 border-b border-gray-200 text-sm text-gray-700";
+                
+                const tdName = document.createElement('td');
+                tdName.className = "border border-gray-300 px-4 py-2 font-medium text-gray-900";
+                tdName.innerText = name;
+
+                const tdRole = document.createElement('td');
+                tdRole.className = "border border-gray-300 px-4 py-2";
+                if (res.isOut) {
+                    tdRole.innerHTML = `<span class="font-bold text-red-600">${res.role}</span> <span class="text-xs text-gray-500">(希望外分配)</span>`;
+                } else {
+                    tdRole.innerHTML = `<span class="font-bold text-blue-600">${res.role}</span> <span class="text-xs text-gray-500">(${res.rank}希望)</span>`;
+                }
+
+                tr.appendChild(tdName);
+                tr.appendChild(tdRole);
+                tableBody.appendChild(tr);
+            }
+            resultBox.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
