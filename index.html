@@ -8,38 +8,41 @@
     <link href="https://cloudflare.com" rel="stylesheet">
 </head>
 <body class="bg-gray-100 min-h-screen py-8 px-4">
-    <div class="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6">
+    <!-- 画面幅を広げつつ、子要素が横に並ばないように flex flex-col を最上部にも追加 -->
+    <div class="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6 flex flex-col">
         <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">🎭 役職自動割り当てツール</h1>
 
         <!-- 1. モード選択 -->
-        <div class="mb-6 flex flex-col">
-            <label class="block text-gray-700 font-bold mb-2">1. 割り当てモードを選択してください</label>
-            <select id="mode" class="w-full p-2 border rounded bg-white">
+        <div class="mb-6 w-full block clear-both">
+            <label class="w-full block text-gray-700 font-bold mb-2">1. 割り当てモードを選択してください</label>
+            <select id="mode" class="w-full p-2 border rounded bg-white block">
                 <option value="fairness_first">ワースト回避モード（全員の不満度を最小化・要人数一致）</option>
                 <option value="satisfaction_first">第1希望最優先モード（上位希望の当選数を最大化）</option>
             </select>
         </div>
 
         <!-- 2. 定員入力 -->
-        <div class="mb-6 flex flex-col">
-            <label class="block text-gray-700 font-bold mb-2">2. 各役職の定員 (役職名: 定員)</label>
-            <textarea id="roles" class="w-full p-3 border rounded font-mono text-sm h-28" rows="4">
-HO1: 1
+        <div class="mb-6 w-full block clear-both">
+            <label class="w-full block text-gray-700 font-bold mb-2">2. 各役職の定員 (役職名: 定員)</label>
+            <textarea id="roles" class="w-full p-3 border rounded font-mono text-sm h-28 block" rows="4">HO1: 1
 HO2: 1
 HO3: 1
-HO4: 1
-            </textarea>
+HO4: 1</textarea>
         </div>
 
         <!-- 3. 希望順位入力 -->
-        <div class="mb-6 flex flex-col">
-            <label class="block text-gray-700 font-bold mb-2">3. メンバーの希望順位 (名前: {役職: 順位, ...})</label>
-            <textarea id="preferences" class="w-full p-3 border rounded font-mono text-sm h-96" rows="12">
-Member1: {HO1: 2, HO2: 2, HO3: 1, HO4: 1}
+        <div class="mb-6 w-full block clear-both">
+            <label class="w-full block text-gray-700 font-bold mb-2">3. メンバーの希望順位 (名前: {役職: 順位, ...})</label>
+            <textarea id="preferences" class="w-full p-3 border rounded font-mono text-sm h-96 block" rows="12">Member1: {HO1: 2, HO2: 2, HO3: 1, HO4: 1}
 Member2: {HO1: 1, HO2: 3, HO3: 3, HO4: 2}
 Member3: {HO1: 2, HO2: 1, HO3: 3, HO4: 1}
-Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}
-            </textarea>
+Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
+        </div>
+
+        <!-- 固定お知らせアナウンス -->
+        <div class="mb-6 w-full block clear-both border-t pt-4 text-sm text-gray-600">
+            <p class="font-bold text-gray-700 mb-1">⏳ システムからのお知らせ</p>
+            <p>ボタンを押すとその場で一瞬で計算が行われます。結果は画面の一番下に表示されます。</p>
         </div>
 
         <!-- 実行ボタン -->
