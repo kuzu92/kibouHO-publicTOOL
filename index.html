@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎭 役職自動割り当てツール (GitHub Pages版)</title>
+    <!-- 重い外部リンクを完全に排除し、ブラウザを爆速にする内蔵スタイルを定義 -->
     <style>
         body { font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; padding: 2rem 1rem; }
         .container { max-width: 44rem; margin: 0 auto; background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -47,7 +48,8 @@
         <div class="mb-6">
             <label class="font-bold">2. 各役職の定員 (役職名: 定員)</label>
             <br>
-            <textarea id="roles" class="h-28" rows="4">HO1: 1
+            <textarea id="roles" class="h-28" rows="4">
+HO1: 1
 HO2: 1
 HO3: 1
 HO4: 1</textarea>
@@ -57,7 +59,8 @@ HO4: 1</textarea>
         <div class="mb-6">
             <label class="font-bold">3. メンバーの希望順位 (名前: {役職: 順位, ...})</label>
             <br>
-            <textarea id="preferences" class="h-48" rows="6">Member1: {HO1: 2, HO2: 2, HO3: 1, HO4: 1}
+            <textarea id="preferences" class="h-48" rows="6">
+Member1: {HO1: 2, HO2: 2, HO3: 1, HO4: 1}
 Member2: {HO1: 1, HO2: 3, HO3: 3, HO4: 2}
 Member3: {HO1: 2, HO2: 1, HO3: 3, HO4: 1}
 Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
@@ -70,21 +73,7 @@ Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
 
         <!-- 結果・エラー表示エリア -->
         <div id="error-box" class="hidden error"></div>
-        
-        <div id="result-box" class="hidden">
-            <h2>📊 割り当て結果</h2>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>名前</th>
-                            <th>割り当て役職</th>
-                        </tr>
-                    </thead>
-                    <tbody id="result-table-body"></tbody>
-                </table>
-            </div>
-        </div>
+        <div id="result-box" class="hidden"></div>
     </div>
     <script>
         function parseRolesYAML(text) {
@@ -154,12 +143,12 @@ Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
         function executeAssignment() {
             const errorBox = document.getElementById('error-box');
             const resultBox = document.getElementById('result-box');
-            const tableBody = document.getElementById('result-table-body');
             
+            // 実行ごとに表示と中身を完全にリセット
             errorBox.classList.add('hidden');
             errorBox.innerText = '';
             resultBox.classList.add('hidden');
-            tableBody.innerHTML = '';
+            resultBox.innerHTML = '';
 
             const mode = document.getElementById('mode').value;
             const roles = parseRolesYAML(document.getElementById('roles').value);
@@ -209,7 +198,6 @@ Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
                         if (penalty > currentMaxPenalty) currentMaxPenalty = penalty;
                     }
 
-                    // 不等号を排除した安全な判定処理
                     const isNewMinMax = (currentMaxPenalty !== minMaxPenalty && currentMaxPenalty === Math.min(currentMaxPenalty, minMaxPenalty));
                     if (isNewMinMax) {
                         minMaxPenalty = currentMaxPenalty;
@@ -225,7 +213,8 @@ Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
                         }
                     }
                 }
-            } else {
+            }
+            else {
                 let remainingRoles = Object.assign({}, roles);
                 let assignments = {};
                 members.forEach(m => assignments[m] = null);
@@ -238,7 +227,6 @@ Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
                     });
                 });
 
-                // 不等号を排除したループ処理（1からmaxRankまで）
                 let rank = 1;
                 while (rank <= maxRank) {
                     let roleDemands = {};
@@ -282,12 +270,24 @@ Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
                 results = assignments;
             }
             // --- 結果の出力処理 ---
+            const resultTitle = document.createElement('h2');
+            resultTitle.innerText = "📊 割り当て結果";
+            resultBox.appendChild(resultTitle);
+
             const resultInfo = document.createElement('div');
             resultInfo.className = "info";
-            
             const patternCount = (mode === "fairness_first") ? bestPatterns.length : 1;
             resultInfo.innerText = `💡 条件を最もよく満たす組み合わせが ${patternCount} 通り見つかりました。`;
-            tableBody.appendChild(resultInfo);
+            resultBox.appendChild(resultInfo);
+
+            const tableWrapper = document.createElement('div');
+            tableWrapper.style.overflowX = "auto";
+            const newTable = document.createElement('table');
+            newTable.innerHTML = `<thead><tr><th>名前</th><th>割り当て役職</th></tr></thead>`;
+            const newTableBody = document.createElement('tbody');
+            newTable.appendChild(newTableBody);
+            tableWrapper.appendChild(newTable);
+            resultBox.appendChild(tableWrapper);
 
             const displayPatterns = (mode === "fairness_first") ? bestPatterns : [results];
 
@@ -296,12 +296,12 @@ Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
                     const patternHeader = document.createElement('tr');
                     patternHeader.style.backgroundColor = "#f3f4f6";
                     patternHeader.style.fontWeight = "bold";
-                    patternHeader.style.textAlign = "center";
                     patternHeader.innerHTML = `<td colspan="2" style="text-align: center;">【パターン ${index + 1}】</td>`;
-                    tableBody.appendChild(patternHeader);
+                    newTableBody.appendChild(patternHeader);
                 }
 
                 for (let [name, res] of Object.entries(pattern)) {
+                    if (!res) continue;
                     const tr = document.createElement('tr');
                     
                     const tdName = document.createElement('td');
@@ -319,15 +319,14 @@ Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
 
                     tr.appendChild(tdName);
                     tr.appendChild(tdRole);
-                    tableBody.appendChild(tr);
+                    newTableBody.appendChild(tr);
                 }
 
-                // 複数パターンの区切り判定も安全に処理
                 const isNotLast = (index !== patternCount - 1 && index === Math.min(index, patternCount - 1));
                 if (patternCount > 1 && isNotLast) {
                     const spacer = document.createElement('tr');
                     spacer.innerHTML = '<td colspan="2" style="border: none; padding: 0.5rem 0;"></td>';
-                    tableBody.appendChild(spacer);
+                    newTableBody.appendChild(spacer);
                 }
             });
 
