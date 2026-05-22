@@ -4,47 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎭 役職自動割り当てツール (GitHub Pages版)</title>
-    <!-- 見た目を綺麗にするためのスタイルシート -->
-    <link href="https://cloudflare.com" rel="stylesheet">
+    <!-- ✨壊れていた読み込み先を正しいTailwind CSSのURLに修正しました -->
+    <link href="https://jsdelivr.net" rel="stylesheet">
 </head>
 <body class="bg-gray-100 min-h-screen py-8 px-4">
-    <!-- 画面幅を広げつつ、子要素が横に並ばないように flex flex-col を最上部にも追加 -->
-    <div class="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6 flex flex-col">
+    <div class="max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6">
         <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">🎭 役職自動割り当てツール</h1>
 
         <!-- 1. モード選択 -->
-        <div class="mb-6 w-full block clear-both">
-            <label class="w-full block text-gray-700 font-bold mb-2">1. 割り当てモードを選択してください</label>
-            <select id="mode" class="w-full p-2 border rounded bg-white block">
+        <div class="mb-6">
+            <label class="text-gray-700 font-bold mb-2">1. 割り当てモードを選択してください</label>
+            <br><!-- ✨物理的に強制改行 -->
+            <select id="mode" class="w-full p-2 border rounded bg-white mt-2">
                 <option value="fairness_first">ワースト回避モード（全員の不満度を最小化・要人数一致）</option>
                 <option value="satisfaction_first">第1希望最優先モード（上位希望の当選数を最大化）</option>
             </select>
         </div>
 
         <!-- 2. 定員入力 -->
-        <div class="mb-6 w-full block clear-both">
-            <label class="w-full block text-gray-700 font-bold mb-2">2. 各役職の定員 (役職名: 定員)</label>
-            <textarea id="roles" class="w-full p-3 border rounded font-mono text-sm h-28 block" rows="4">HO1: 1
+        <div class="mb-6">
+            <label class="text-gray-700 font-bold mb-2">2. 各役職の定員 (役職名: 定員)</label>
+            <br><!-- ✨物理的に強制改行 -->
+            <textarea id="roles" class="w-full p-3 border rounded font-mono text-sm h-28 mt-2" rows="4">
+HO1: 1
 HO2: 1
 HO3: 1
-HO4: 1</textarea>
+HO4: 1
+            </textarea>
         </div>
 
         <!-- 3. 希望順位入力 -->
-        <div class="mb-6 w-full block clear-both">
-            <label class="w-full block text-gray-700 font-bold mb-2">3. メンバーの希望順位 (名前: {役職: 順位, ...})</label>
-            <textarea id="preferences" class="w-full p-3 border rounded font-mono text-sm h-96 block" rows="12">Member1: {HO1: 2, HO2: 2, HO3: 1, HO4: 1}
+        <div class="mb-6">
+            <label class="text-gray-700 font-bold mb-2">3. メンバーの希望順位 (名前: {役職: 順位, ...})</label>
+            <br><!-- ✨物理的に強制改行 -->
+            <textarea id="preferences" class="w-full p-3 border rounded font-mono text-sm h-96 mt-2" rows="12">
+Member1: {HO1: 2, HO2: 2, HO3: 1, HO4: 1}
 Member2: {HO1: 1, HO2: 3, HO3: 3, HO4: 2}
 Member3: {HO1: 2, HO2: 1, HO3: 3, HO4: 1}
-Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
+Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}
+            </textarea>
         </div>
 
         <!-- 実行ボタン -->
-        <div class="text-center mb-8">
+        <div class="text-center mb-8 mt-6">
             <button onclick="executeAssignment()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full shadow text-lg transition duration-200">
                 🚀 自動割り当てを実行する
             </button>
         </div>
+
 
         <!-- 結果・エラー表示エリア -->
         <div id="error-box" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded whitespace-pre-line"></div>
