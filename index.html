@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎭 役職自動割り当てツール (GitHub Pages版)</title>
-    <!-- 重い外部リンクを完全に排除し、ブラウザを爆速にする内蔵スタイルを定義 -->
+    <title>🎭 役職自動割り当てツール</title>
+    <!-- ブラウザを爆速にする内蔵スタイルを定義 -->
     <style>
         body { font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; padding: 2rem 1rem; }
         .container { max-width: 44rem; margin: 0 auto; background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -42,6 +42,7 @@
                 <option value="fairness_first">ワースト回避モード（全員の不満度を最小化・要人数一致）</option>
                 <option value="satisfaction_first">第1希望最優先モード（上位希望の当選数を最大化）</option>
             </select>
+            <small><small>※第1希望最優先モードは上位希望から平等にランダムで決定します。それより下の希望順位は考慮しません。</small></small>
         </div>
 
         <!-- 2. 定員入力 -->
@@ -52,18 +53,21 @@
 HO1: 1
 HO2: 1
 HO3: 1
-HO4: 1</textarea>
+HO4: 1
+            </textarea>
         </div>
 
         <!-- 3. 希望順位入力 -->
         <div class="mb-6">
-            <label class="font-bold">3. メンバーの希望順位 (名前: {役職: 順位, ...})</label>
+            <label class="font-bold">3. メンバーの希望順位 (名前: {役職: 順位, ...})</label><br>
+            <small><small>※同順位希望が複数役職に書かれていても問題ありません。</small></small>
             <br>
             <textarea id="preferences" class="h-48" rows="6">
 Member1: {HO1: 2, HO2: 2, HO3: 1, HO4: 1}
 Member2: {HO1: 1, HO2: 3, HO3: 3, HO4: 2}
 Member3: {HO1: 2, HO2: 1, HO3: 3, HO4: 1}
-Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}</textarea>
+Member4: {HO1: 2, HO2: 1, HO3: 1, HO4: 3}
+            </textarea>
         </div>
 
         <!-- 実行ボタン -->
